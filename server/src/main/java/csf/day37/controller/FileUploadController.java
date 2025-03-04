@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import csf.day37.models.Post;
 import csf.day37.service.FileUploadService;
+import csf.day37.service.S3Service;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
@@ -25,6 +26,8 @@ import jakarta.json.JsonObject;
 public class FileUploadController {
     @Autowired
     private FileUploadService fileUploadSvc;
+    @Autowired
+    private S3Service s3Svc;
 
     private static final String BASE64_PREFIX = "data:image/png;base64,";
 
@@ -34,9 +37,17 @@ public class FileUploadController {
     public ResponseEntity<String> upload(@RequestPart("file") MultipartFile file,
                                         @RequestPart String comments) {
         String postId = "";
+        String s3EndpointURL = "";
         
         try {
             postId = fileUploadSvc.upload(file, comments);
+
+            if(postId != null && !postId.isEmpty()) {
+                s3EndpointURL = s3Svc.upload(file, comments, postId);
+                
+                System.out.println("s3EndpointURL: " + s3EndpointURL);
+            }
+            
         } catch(SQLException | IOException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
